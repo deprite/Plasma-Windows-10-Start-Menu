@@ -1,0 +1,21 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Id": "org.kde.plasma.win10start",
+        "Name": "Plasma Start Screen",
+        "Description": "A full-screen, tile-based application launcher for Plasma 6",
+        "Icon": "start-here-kde",
+        "Version": "0.13.3",
+        "License": "GPL-3.0-or-later",
+        "Category": "Application Launchers",
+        "Authors": [
+            {
+                "Name": "Plasma Start Screen contributors"
+            }
+        ]
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-Provides": [
+        "org.kde.plasma.launchermenu"
+    ]
+}

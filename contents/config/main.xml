@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0
+      http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name=""/>
+
+  <group name="General">
+    <entry name="icon" type="String">
+      <label>Icon shown by the application launcher.</label>
+      <default>start-here-kde</default>
+    </entry>
+    <entry name="tileLayout" type="String">
+      <label>JSON-encoded custom tile groups and application assignments.</label>
+      <default></default>
+    </entry>
+    <entry name="appListOpenOnLaunch" type="Bool">
+      <label>Keep the application list open when the launcher opens.</label>
+      <default>true</default>
+    </entry>
+    <entry name="showDocumentsShortcut" type="Bool">
+      <label>Show the Home folder shortcut in the utility rail.</label>
+      <default>true</default>
+    </entry>
+    <entry name="homeShortcutLabel" type="String">
+      <label>Label for the Home folder shortcut.</label>
+      <default>Home</default>
+    </entry>
+    <entry name="homeShortcutUrl" type="String">
+      <label>Custom URL for the Home folder shortcut; empty uses the user's home folder.</label>
+      <default></default>
+    </entry>
+    <entry name="showPicturesShortcut" type="Bool">
+      <label>Show the Pictures shortcut in the utility rail.</label>
+      <default>true</default>
+    </entry>
+    <entry name="picturesShortcutLabel" type="String">
+      <label>Label for the Pictures shortcut.</label>
+      <default>Pictures</default>
+    </entry>
+    <entry name="picturesShortcutUrl" type="String">
+      <label>Custom URL for the Pictures shortcut; empty uses the user's Pictures folder.</label>
+      <default></default>
+    </entry>
+    <entry name="showSystemSettingsShortcut" type="Bool">
+      <label>Show the System Settings shortcut in the utility rail.</label>
+      <default>true</default>
+    </entry>
+    <entry name="backgroundColor" type="String">
+      <label>Base color of the launcher glass background.</label>
+      <default>#08152f</default>
+    </entry>
+    <entry name="backgroundOpacity" type="Double">
+      <label>Opacity of the launcher glass background.</label>
+      <default>0.72</default>
+    </entry>
+    <entry name="railColor" type="String">
+      <label>Color of the launcher utility rail.</label>
+      <default>#061126</default>
+    </entry>
+    <entry name="tileColor" type="String">
+      <label>Default color of application tiles.</label>
+      <default>#202e4c</default>
+    </entry>
+    <entry name="accentColor" type="String">
+      <label>Launcher accent color.</label>
+      <default>#2e86de</default>
+    </entry>
+  </group>
+</kcfg>
