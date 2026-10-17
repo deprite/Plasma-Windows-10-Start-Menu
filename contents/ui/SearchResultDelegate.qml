@@ -56,7 +56,13 @@ QQC2.ItemDelegate {
     }
 
     background: Rectangle {
-        color: root.down ? Qt.rgba(1, 1, 1, 0.22) : root.hovered ? Qt.rgba(1, 1, 1, 0.12) : "transparent"
+        color: root.down
+            ? Qt.rgba(1, 1, 1, 0.22)
+            : root.highlighted
+                ? Qt.rgba(1, 1, 1, 0.18)
+                : root.hovered
+                    ? Qt.rgba(1, 1, 1, 0.12)
+                    : "transparent"
         radius: 4
     }
 }

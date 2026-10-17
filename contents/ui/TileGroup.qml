@@ -22,6 +22,9 @@ Item {
     signal tileDragFinished(int sourceGroup, int sourceIndex, real sceneX, real sceneY)
     signal renameRequested()
     signal columnCountRequested(int columns)
+    signal outlineColorRequested()
+    signal tileColorRequested()
+    signal colorsResetRequested()
     signal groupMoveRequested(int offset)
     signal groupDragStarted()
     signal groupDragFinished(int sourceIndex, real sceneX, real sceneY)
@@ -141,6 +144,31 @@ Item {
                     }
                 }
 
+                QQC2.Menu {
+                    title: i18n("Colors")
+                    icon.name: "color-picker"
+
+                    QQC2.MenuItem {
+                        text: i18n("Drag highlight color…")
+                        icon.name: "color-picker"
+                        onTriggered: root.outlineColorRequested()
+                    }
+
+                    QQC2.MenuItem {
+                        text: i18n("Tile color…")
+                        icon.name: "color-picker"
+                        onTriggered: root.tileColorRequested()
+                    }
+
+                    QQC2.MenuSeparator { }
+
+                    QQC2.MenuItem {
+                        text: i18n("Reset colors")
+                        icon.name: "edit-undo"
+                        onTriggered: root.colorsResetRequested()
+                    }
+                }
+
                 QQC2.MenuSeparator { }
 
                 QQC2.MenuItem {
@@ -193,7 +221,7 @@ Item {
                 appIndex: index
                 appName: entry ? entry.name : i18n("Unavailable application")
                 appIcon: entry ? entry.icon : "application-x-executable"
-                accentColor: index === 0 ? root.accent : root.tileColor
+                accentColor: root.tileColor
                 onActivated: root.launchRequested(entry)
                 onContextRequested: (x, y) => root.tileContextRequested(index, appTile, x, y)
                 onDragStarted: root.tileDragStarted()

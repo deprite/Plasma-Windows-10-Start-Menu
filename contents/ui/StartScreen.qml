@@ -1,6 +1,7 @@
 import QtQuick
 import QtCore
 import QtQuick.Controls as QQC2
+import QtQuick.Dialogs
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.private.kicker as Kicker
@@ -9,6 +10,7 @@ FocusScope {
     id: root
 
     signal closeRequested()
+    onCloseRequested: resetSearch()
     Layout.minimumWidth: 900
     Layout.minimumHeight: 620
     Layout.preferredWidth: 1400
@@ -31,6 +33,8 @@ FocusScope {
     property int contextGroupIndex: -1
     property int contextAppIndex: -1
     property int editedGroupIndex: -1
+    property int colorGroupIndex: -1
+    property string colorGroupProperty: ""
     property bool renameGroupMode: false
     property bool tileDragActive: false
     property bool groupDragActive: false
@@ -41,7 +45,9 @@ FocusScope {
     readonly property Item keyEventTarget: groupEditorDialog.visible
                                             ? groupNameField
                                             : settingsPageVisible ? null : root
-    readonly property bool transientDialogOpen: settingsPageVisible && settingsPage.folderDialogVisible
+    readonly property bool transientDialogOpen: (groupColorDialogLoader.item
+                                                 && groupColorDialogLoader.item.visible)
+                                                || (settingsPageVisible && settingsPage.folderDialogVisible)
     readonly property bool searchActive: searchField.text.trim().length > 0
     readonly property var searchResultsModel: runnerModel.count > 0 ? runnerModel.modelForRow(0) : null
 
@@ -130,6 +136,15 @@ FocusScope {
         ensureTileLayout()
     }
 
+    function appSection(name) {
+        const trimmedName = String(name || "").trim()
+        if (trimmedName.length === 0) return "#"
+        const firstCharacter = trimmedName.charAt(0)
+        return firstCharacter.toLocaleUpperCase() !== firstCharacter.toLocaleLowerCase()
+            ? firstCharacter.toLocaleUpperCase()
+            : "#"
+    }
+
     function normalizedGroups(groups) {
         let clean = []
         if (!Array.isArray(groups)) return clean
@@ -140,6 +155,8 @@ FocusScope {
                 id: String(group.id || ("group-" + i)),
                 title: String(group.title || i18n("Group %1", i + 1)),
                 columns: Math.max(2, Math.min(6, Math.round(Number(group.columns) || 2))),
+                outlineColor: String(group.outlineColor || ""),
+                tileColor: String(group.tileColor || ""),
                 apps: group.apps.map(appId => String(appId))
             })
         }
@@ -268,11 +285,17 @@ FocusScope {
         appListVisible = plasmoid.configuration.appListOpenOnLaunch
     }
 
+    function resetSearch() {
+        searchField.clear()
+    }
+
     function dismissTransientUi() {
+        resetSearch()
         appContextMenu.close()
         tileContextMenu.close()
         groupEditorDialog.close()
         deleteGroupDialog.close()
+        if (groupColorDialogLoader.item) groupColorDialogLoader.item.close()
         settingsPage.closeTransientDialogs()
         utilityRail.closeTransientMenus()
         for (let index = 0; index < tileGroupRepeater.count; ++index) {
@@ -284,6 +307,8 @@ FocusScope {
         contextGroupIndex = -1
         contextAppIndex = -1
         editedGroupIndex = -1
+        colorGroupIndex = -1
+        colorGroupProperty = ""
         renameGroupMode = false
         tileDragActive = false
         groupDragActive = false
@@ -390,6 +415,21 @@ FocusScope {
         saveTileGroups(groups)
     }
 
+    function setGroupColor(groupIndex, propertyName, colorValue) {
+        if (groupIndex < 0 || groupIndex >= tileGroups.length) return
+        let groups = copiedGroups()
+        groups[groupIndex][propertyName] = String(colorValue || "")
+        saveTileGroups(groups)
+    }
+
+    function resetGroupColors(groupIndex) {
+        if (groupIndex < 0 || groupIndex >= tileGroups.length) return
+        let groups = copiedGroups()
+        groups[groupIndex].outlineColor = ""
+        groups[groupIndex].tileColor = ""
+        saveTileGroups(groups)
+    }
+
     function reorderGroup(sourceIndex, insertionIndex) {
         if (sourceIndex < 0 || sourceIndex >= tileGroups.length) return
         let groups = copiedGroups()
@@ -416,8 +456,41 @@ FocusScope {
     }
 
     function groupAccent(groupIndex) {
+        if (groupIndex >= 0 && groupIndex < tileGroups.length
+                && tileGroups[groupIndex].outlineColor) {
+            return tileGroups[groupIndex].outlineColor
+        }
         const accents = ["#6d42dc", root.accentColor, "#008b9a", "#b34b70", "#39734d"]
         return accents[groupIndex % accents.length]
+    }
+
+    function groupTileColor(groupIndex) {
+        return groupIndex >= 0 && groupIndex < tileGroups.length
+                && tileGroups[groupIndex].tileColor
+            ? tileGroups[groupIndex].tileColor
+            : root.tileColor
+    }
+
+    function chooseGroupOutlineColor(groupIndex) {
+        openGroupColorDialog(groupIndex, "outlineColor", groupAccent(groupIndex))
+    }
+
+    function chooseGroupTileColor(groupIndex) {
+        openGroupColorDialog(groupIndex, "tileColor", groupTileColor(groupIndex))
+    }
+
+    function openGroupColorDialog(groupIndex, propertyName, initialColor) {
+        colorGroupIndex = groupIndex
+        colorGroupProperty = propertyName
+        // Recreate the dialog for each use. Reopening a ColorDialog can leave
+        // its color plane blank on some Plasma setups.
+        groupColorDialogLoader.active = false
+        groupColorDialogLoader.active = true
+        Qt.callLater(function() {
+            if (!groupColorDialogLoader.item) return
+            groupColorDialogLoader.item.selectedColor = initialColor
+            groupColorDialogLoader.item.open()
+        })
     }
 
     function renameGroup(groupIndex, title) {
@@ -549,6 +622,25 @@ FocusScope {
         }
     }
 
+    Loader {
+        id: groupColorDialogLoader
+        active: false
+
+        sourceComponent: ColorDialog {
+            title: root.colorGroupProperty === "outlineColor"
+                ? i18n("Choose drag highlight color")
+                : i18n("Choose group tile color")
+            options: ColorDialog.DontUseNativeDialog
+            onAccepted: {
+                root.setGroupColor(root.colorGroupIndex,
+                                   root.colorGroupProperty,
+                                   selectedColor.toString())
+                Qt.callLater(() => groupColorDialogLoader.active = false)
+            }
+            onRejected: Qt.callLater(() => groupColorDialogLoader.active = false)
+        }
+    }
+
     QQC2.Dialog {
         id: groupEditorDialog
         anchors.centerIn: parent
@@ -614,7 +706,6 @@ FocusScope {
             menuColor: root.tileColor
             accentColor: root.accentColor
             appListVisible: root.appListVisible
-            launcherSettingsVisible: root.settingsPageVisible
             showDocumentsShortcut: plasmoid.configuration.showDocumentsShortcut
             homeShortcutLabel: plasmoid.configuration.homeShortcutLabel
             homeShortcutUrl: plasmoid.configuration.homeShortcutUrl
@@ -623,7 +714,6 @@ FocusScope {
             picturesShortcutUrl: plasmoid.configuration.picturesShortcutUrl
             showSystemSettingsShortcut: plasmoid.configuration.showSystemSettingsShortcut
             onCloseRequested: root.closeRequested()
-            onLauncherSettingsRequested: root.settingsPageVisible = true
             onAppListToggleRequested: {
                 root.settingsPageVisible = false
                 root.appListVisible = !root.appListVisible
@@ -666,13 +756,33 @@ FocusScope {
                     delegate: Item {
                         required property int index
                         required property var modelData
+                        readonly property string sectionName: root.appSection(modelData.name)
+                        readonly property bool startsSection: index === 0
+                            || sectionName !== root.appSection(root.flatApps[index - 1].name)
+
                         width: appList.width - 12
                         visible: root.matches(modelData.name)
-                        height: 48
+                        height: 48 + (startsSection ? 34 : 0)
+
+                        QQC2.Label {
+                            id: sectionHeading
+                            anchors.top: parent.top
+                            anchors.left: parent.left
+                            height: parent.startsSection ? 34 : 0
+                            visible: parent.startsSection
+                            text: parent.sectionName
+                            color: root.accentColor
+                            font.pixelSize: 18
+                            font.weight: Font.DemiBold
+                            verticalAlignment: Text.AlignVCenter
+                        }
 
                         AppListDelegate {
                             id: appListDelegate
-                            anchors.fill: parent
+                            anchors.top: sectionHeading.bottom
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: 48
                             appName: parent.modelData.name
                             appIcon: parent.modelData.icon
                             onActivated: root.launch(parent.modelData)
@@ -719,6 +829,36 @@ FocusScope {
                     }
 
                     Item { Layout.fillWidth: true }
+
+                    QQC2.ToolButton {
+                        id: launcherSettingsButton
+                        Layout.preferredWidth: 46
+                        Layout.preferredHeight: 46
+                        hoverEnabled: true
+                        Accessible.name: i18n("Launcher settings")
+                        onClicked: root.settingsPageVisible = true
+
+                        QQC2.ToolTip.visible: hovered
+                        QQC2.ToolTip.delay: Kirigami.Units.toolTipDelay
+                        QQC2.ToolTip.text: i18n("Launcher settings")
+
+                        contentItem: QQC2.Label {
+                            text: "•••"
+                            color: "white"
+                            font.pixelSize: 18
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        background: Rectangle {
+                            color: launcherSettingsButton.down
+                                ? Qt.rgba(1, 1, 1, 0.2)
+                                : launcherSettingsButton.hovered
+                                    ? Qt.rgba(1, 1, 1, 0.1)
+                                    : "transparent"
+                            radius: 3
+                        }
+                    }
 
                     QQC2.TextField {
                         id: searchField
@@ -814,7 +954,7 @@ FocusScope {
                                 unit: root.tileUnit
                                 gap: root.gap
                                 accent: root.groupAccent(index)
-                                tileColor: root.tileColor
+                                tileColor: root.groupTileColor(index)
                                 dragActive: root.tileDragActive
                                 groupDropActive: root.groupDragActive
                                 onLaunchRequested: entry => root.launch(entry)
@@ -824,6 +964,9 @@ FocusScope {
                                 onTileDragFinished: (sourceGroup, sourceIndex, sceneX, sceneY) => root.finishTileDrag(sourceGroup, sourceIndex, sceneX, sceneY)
                                 onRenameRequested: root.openGroupEditor(index)
                                 onColumnCountRequested: columns => root.setGroupColumns(index, columns)
+                                onOutlineColorRequested: root.chooseGroupOutlineColor(index)
+                                onTileColorRequested: root.chooseGroupTileColor(index)
+                                onColorsResetRequested: root.resetGroupColors(index)
                                 onGroupMoveRequested: offset => root.reorderGroup(index, index + offset)
                                 onGroupDragStarted: root.groupDragActive = true
                                 onGroupDragFinished: (sourceIndex, sceneX, sceneY) => root.finishGroupDrag(sourceIndex, sceneX, sceneY)
@@ -868,6 +1011,7 @@ FocusScope {
                         required property var model
 
                         width: searchResults.width - 16
+                        highlighted: index === searchResults.currentIndex
                         resultName: String(model.display || "")
                         resultIcon: model.decoration
                         resultDescription: String(model.description || "")

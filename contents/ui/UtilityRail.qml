@@ -12,7 +12,6 @@ Rectangle {
     required property color menuColor
     required property color accentColor
     required property bool appListVisible
-    required property bool launcherSettingsVisible
     required property bool showDocumentsShortcut
     required property string homeShortcutLabel
     required property string homeShortcutUrl
@@ -21,7 +20,6 @@ Rectangle {
     required property string picturesShortcutUrl
     required property bool showSystemSettingsShortcut
     signal closeRequested()
-    signal launcherSettingsRequested()
     signal appListToggleRequested()
 
     color: backgroundColor
@@ -180,14 +178,6 @@ Rectangle {
             label: i18n("Apps")
             active: root.appListVisible
             onClicked: root.appListToggleRequested()
-        }
-
-        RailButton {
-            id: launcherSettingsButton
-            iconName: "settings-configure"
-            label: i18n("Launcher")
-            active: root.launcherSettingsVisible
-            onClicked: root.launcherSettingsRequested()
         }
 
         Rectangle {
